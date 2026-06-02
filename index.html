@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stackia Telecom — Réseau mesh LoRa local, sans internet</title>
+    <meta name="description"
+        content="Stackia Telecom : un firmware mesh LoRa 915 MHz pour ESP8266/ESP32. Communiquez en RF sans dépendance internet. Pont MQTT pour n8n, captive portal, gros messages fragmentés. Plus simple et plus hackable que Meshtastic ou MeshCore.">
+    <meta name="keywords"
+        content="lora, mesh, meshtastic, meshcore, esp8266, esp32, lr20-a, 915mhz, mqtt, n8n, firmware, radio, stackia, telecom">
+    <meta name="author" content="Stackia Telecom">
+    <meta name="theme-color" content="#7c3aed">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Stackia Telecom — Mesh LoRa local">
+    <meta property="og:description"
+        content="Un réseau mesh LoRa 915 MHz sans internet. RF longue portée, pont MQTT/n8n, web UI embarquée.">
+    <meta property="og:type" content="website">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+                    },
+                    colors: {
+                        neon: {
+                            50: '#f3e8ff', 100: '#e9d5ff', 200: '#d8b4fe', 300: '#c084fc',
+                            400: '#a855f7', 500: '#9333ea', 600: '#7c3aed', 700: '#6d28d9',
+                            800: '#5b21b6', 900: '#4c1d95',
+                        },
+                        signal: {
+                            300: '#67e8f9', 400: '#22d3ee', 500: '#06b6d4', 600: '#0891b2',
+                        },
+                    },
+                },
+            },
+        }
+    </script>
+
+    <!-- AOS (Animate on Scroll) -->
+    <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* ========== BASE ========== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #000000;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+
+        /* ========== SCROLLBAR ========== */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #7c3aed; border-radius: 999px; }
+
+        /* ========== ANIMATED GRADIENT BG ========== */
+        .hero-bg { position: relative; overflow: hidden; }
+
+        .hero-bg::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: radial-gradient(ellipse at 30% 20%, rgba(124, 58, 237, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(34, 211, 238, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(109, 40, 217, 0.08) 0%, transparent 60%);
+            animation: bgPulse 8s ease-in-out infinite alternate;
+            z-index: 0;
+        }
+
+        @keyframes bgPulse {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(-3%, 3%) scale(1.05); }
+        }
+
+        /* ========== FLOATING PARTICLES ========== */
+        .particles { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(168, 85, 247, 0.3);
+            animation: float linear infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+        }
+
+        /* ========== GLOW EFFECTS ========== */
+        .glow-btn {
+            position: relative;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(124, 58, 237, 0.3), 0 0 60px rgba(124, 58, 237, 0.1);
+        }
+
+        .glow-btn:hover {
+            box-shadow: 0 0 30px rgba(168, 85, 247, 0.6), 0 0 80px rgba(168, 85, 247, 0.3), 0 0 120px rgba(168, 85, 247, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .glow-btn:active { transform: translateY(0px); }
+
+        .glow-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(124, 58, 237, 0.15);
+        }
+
+        .glow-card:hover {
+            border-color: rgba(168, 85, 247, 0.5);
+            box-shadow: 0 0 30px rgba(124, 58, 237, 0.15), inset 0 0 30px rgba(124, 58, 237, 0.05);
+            transform: translateY(-6px);
+        }
+
+        /* ========== GRADIENT TEXT ========== */
+        .gradient-text {
+            background: linear-gradient(135deg, #c084fc 0%, #a855f7 30%, #7c3aed 60%, #6d28d9 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .gradient-text-bright {
+            background: linear-gradient(135deg, #e9d5ff 0%, #c084fc 40%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .gradient-text-signal {
+            background: linear-gradient(135deg, #67e8f9 0%, #22d3ee 50%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* ========== GRID OVERLAY ========== */
+        .grid-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            background-image:
+                linear-gradient(rgba(124, 58, 237, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(124, 58, 237, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            pointer-events: none;
+        }
+
+        /* ========== PULSE RING ========== */
+        .pulse-ring { animation: pulseRing 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+        @keyframes pulseRing {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* ========== NAV ========== */
+        .nav-blur { backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+
+        /* ========== STEP CONNECTOR ========== */
+        .step-connector { position: relative; }
+
+        .step-connector::after {
+            content: '';
+            position: absolute;
+            top: 50%; right: -2rem;
+            width: 2rem; height: 2px;
+            background: linear-gradient(90deg, rgba(124, 58, 237, 0.5), transparent);
+        }
+
+        @media (max-width: 768px) {
+            .step-connector::after { display: none; }
+        }
+
+        /* ========== MESH NETWORK ANIMATION (HERO) ========== */
+        .mesh-svg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+
+        .mesh-link {
+            stroke: rgba(124, 58, 237, 0.25);
+            stroke-width: 1;
+            stroke-dasharray: 4 6;
+            animation: dashFlow 3s linear infinite;
+        }
+
+        @keyframes dashFlow { to { stroke-dashoffset: -20; } }
+
+        .mesh-node-core { fill: #a855f7; }
+        .mesh-node-core.is-bridge { fill: #22d3ee; }
+
+        .mesh-node-ring {
+            fill: none;
+            stroke: rgba(168, 85, 247, 0.5);
+            transform-box: fill-box;
+            transform-origin: center;
+            animation: nodePulse 2.4s ease-out infinite;
+        }
+
+        .mesh-node-ring.is-bridge { stroke: rgba(34, 211, 238, 0.5); }
+
+        @keyframes nodePulse {
+            0% { transform: scale(0.6); opacity: 0.9; }
+            100% { transform: scale(2.6); opacity: 0; }
+        }
+
+        .packet-dot { fill: #e9d5ff; }
+
+        /* ========== CODE BLOCK ========== */
+        .code-block {
+            font-family: 'JetBrains Mono', ui-monospace, monospace;
+            background: linear-gradient(180deg, rgba(124, 58, 237, 0.04), rgba(0, 0, 0, 0.4));
+            border: 1px solid rgba(124, 58, 237, 0.2);
+        }
+
+        .code-block .tok-key { color: #c084fc; }
+        .code-block .tok-str { color: #67e8f9; }
+        .code-block .tok-num { color: #fbbf24; }
+        .code-block .tok-cmd { color: #a855f7; }
+        .code-block .tok-comment { color: #64748b; }
+
+        /* ========== TABLE ========== */
+        .spec-table th, .spec-table td { border-color: rgba(124, 58, 237, 0.12); }
+
+        /* ========== SIGNAL WAVE (handheld card) ========== */
+        .wave-bar { animation: waveJump 1.2s ease-in-out infinite; transform-origin: bottom; }
+        .wave-bar:nth-child(2) { animation-delay: 0.15s; }
+        .wave-bar:nth-child(3) { animation-delay: 0.3s; }
+        .wave-bar:nth-child(4) { animation-delay: 0.45s; }
+
+        @keyframes waveJump {
+            0%, 100% { transform: scaleY(0.4); }
+            50% { transform: scaleY(1); }
+        }
+
+        /* ========== BADGE DOT ========== */
+        .live-dot { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.6); animation: liveDot 2s infinite; }
+
+        @keyframes liveDot {
+            0% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.5); }
+            70% { box-shadow: 0 0 0 10px rgba(34, 211, 238, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0); }
+        }
+    </style>
+</head>
+
+<body data-aos-easing="ease-out-cubic" data-aos-duration="800" data-aos-delay="0">
+
+    <!-- ===================== NAVIGATION ===================== -->
+    <nav id="main-nav"
+        class="fixed top-0 inset-x-0 z-50 nav-blur bg-black/70 border-b border-white/5 transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16 sm:h-20">
+                <!-- Logo -->
+                <a href="#top" class="flex items-center gap-2 group">
+                    <div
+                        class="w-9 h-9 rounded-xl bg-gradient-to-br from-neon-500 to-neon-700 flex items-center justify-center shadow-lg shadow-neon-500/20 group-hover:shadow-neon-500/40 transition-shadow">
+                        <i data-lucide="radio-tower" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <span class="text-xl font-bold text-white leading-none">Stack<span class="gradient-text">ia</span>
+                        <span class="block text-[10px] font-semibold tracking-[0.25em] text-gray-500 uppercase">Telecom</span>
+                    </span>
+                </a>
+
+                <!-- Desktop Links -->
+                <div class="hidden md:flex items-center gap-7">
+                    <a href="#features" class="text-sm text-gray-400 hover:text-white transition-colors">Fonctionnalités</a>
+                    <a href="#nodes" class="text-sm text-gray-400 hover:text-white transition-colors">Types de nœuds</a>
+                    <a href="#how" class="text-sm text-gray-400 hover:text-white transition-colors">Comment ça marche</a>
+                    <a href="#protocol" class="text-sm text-gray-400 hover:text-white transition-colors">Protocole</a>
+                    <a href="#compare" class="text-sm text-gray-400 hover:text-white transition-colors">vs Meshtastic</a>
+                    <a href="#start"
+                        class="glow-btn inline-flex items-center gap-2 px-5 py-2.5 bg-neon-600 hover:bg-neon-500 text-white text-sm font-semibold rounded-full transition-all">
+                        Flasher un nœud
+                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
+
+                <!-- Mobile menu button -->
+                <button id="mobile-menu-btn" class="md:hidden p-2 text-gray-400 hover:text-white transition-colors"
+                    aria-label="Menu">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+
+            <!-- Mobile Menu -->
+            <div id="mobile-menu" class="md:hidden hidden pb-4 border-t border-white/5 mt-2 pt-4 space-y-3">
+                <a href="#features" class="block text-sm text-gray-400 hover:text-white transition-colors py-2">Fonctionnalités</a>
+                <a href="#nodes" class="block text-sm text-gray-400 hover:text-white transition-colors py-2">Types de nœuds</a>
+                <a href="#how" class="block text-sm text-gray-400 hover:text-white transition-colors py-2">Comment ça marche</a>
+                <a href="#protocol" class="block text-sm text-gray-400 hover:text-white transition-colors py-2">Protocole</a>
+                <a href="#compare" class="block text-sm text-gray-400 hover:text-white transition-colors py-2">vs Meshtastic / MeshCore</a>
+                <a href="#start"
+                    class="glow-btn inline-flex items-center gap-2 px-5 py-2.5 bg-neon-600 hover:bg-neon-500 text-white text-sm font-semibold rounded-full transition-all mt-2">
+                    Flasher un nœud
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===================== HERO SECTION ===================== -->
+    <section id="top" class="hero-bg relative min-h-screen flex items-center justify-center pt-24 pb-16 sm:pt-28 sm:pb-20">
+        <!-- Animated mesh network -->
+        <svg class="mesh-svg" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <g id="mesh-links"></g>
+            <g id="mesh-packets"></g>
+            <g id="mesh-nodes"></g>
+        </svg>
+
+        <!-- Particles -->
+        <div class="particles" id="particles-container"></div>
+        <!-- Grid overlay -->
+        <div class="grid-overlay"></div>
+
+        <div class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 text-center">
+            <!-- Badge -->
+            <div data-aos="fade-down" data-aos-delay="100"
+                class="inline-flex items-center gap-2 px-4 py-1.5 bg-neon-900/40 border border-neon-700/30 rounded-full text-xs sm:text-sm text-neon-300 mb-8 backdrop-blur-sm">
+                <span class="w-2 h-2 bg-signal-400 rounded-full live-dot"></span>
+                Mesh LoRa 915 MHz — 100% local, zéro internet
+            </div>
+
+            <!-- Main Heading -->
+            <h1 data-aos="fade-up" data-aos-delay="200"
+                class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-tight tracking-tight mb-6">
+                Communiquez sans réseau,<br>
+                <span class="gradient-text-bright">maîtrisez vos ondes.</span>
+            </h1>
+
+            <!-- Subtitle -->
+            <p data-aos="fade-up" data-aos-delay="350"
+                class="text-base sm:text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+                <strong class="text-gray-200">Stackia Telecom</strong> est un firmware mesh LoRa pour ESP8266 et ESP32.
+                Vos nœuds discutent en RF longue portée, sans box, sans cloud, sans abonnement — et se branchent à
+                <span class="text-signal-300">MQTT / n8n</span> quand vous le voulez. Comme Meshtastic ou MeshCore,
+                mais en plus simple, plus hackable, et bien à vous.
+            </p>
+
+            <!-- CTAs -->
+            <div data-aos="fade-up" data-aos-delay="500"
+                class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="#start"
+                    class="glow-btn inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-neon-600 to-neon-500 hover:from-neon-500 hover:to-neon-400 text-white font-bold text-base sm:text-lg rounded-full transition-all duration-300">
+                    <i data-lucide="cpu" class="w-5 h-5"></i>
+                    Flasher un nœud
+                    <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                </a>
+                <a href="#features"
+                    class="inline-flex items-center gap-2 px-6 py-4 border border-white/10 hover:border-neon-500/40 text-gray-300 hover:text-white font-medium text-base rounded-full transition-all duration-300 hover:bg-white/5">
+                    <i data-lucide="book-open" class="w-5 h-5"></i>
+                    Lire la doc
+                </a>
+            </div>
+
+            <!-- Stats bar -->
+            <div data-aos="fade-up" data-aos-delay="650"
+                class="mt-16 grid grid-cols-2 sm:grid-cols-4 gap-6 max-w-2xl mx-auto">
+                <div class="text-center">
+                    <div class="text-2xl sm:text-3xl font-bold text-white"><span class="counter" data-target="915">0</span> <span class="text-neon-400 text-lg">MHz</span></div>
+                    <div class="text-xs sm:text-sm text-gray-500 mt-1">Bande LoRa libre</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl sm:text-3xl font-bold text-white">0<span class="text-neon-400 text-lg"> €</span></div>
+                    <div class="text-xs sm:text-sm text-gray-500 mt-1">Abonnement / cloud</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl sm:text-3xl font-bold text-white"><span class="counter" data-target="5">0</span> <span class="text-neon-400 text-lg">sauts</span></div>
+                    <div class="text-xs sm:text-sm text-gray-500 mt-1">TTL de routage</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl sm:text-3xl font-bold text-white">24/7</div>
+                    <div class="text-xs sm:text-sm text-gray-500 mt-1">Autonome</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scroll indicator -->
+        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-10" data-aos="fade-up" data-aos-delay="800">
+            <a href="#features"
+                class="flex flex-col items-center gap-2 text-gray-600 hover:text-neon-400 transition-colors">
+                <span class="text-xs tracking-widest uppercase">Défiler</span>
+                <i data-lucide="chevron-down" class="w-5 h-5 animate-bounce"></i>
+            </a>
+        </div>
+    </section>
+
+    <!-- ===================== FEATURES ===================== -->
+    <section id="features" class="relative py-20 sm:py-28 bg-black">
+        <div class="grid-overlay"></div>
+        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Heading -->
+            <div class="text-center mb-16" data-aos="fade-up">
+                <span
+                    class="inline-block px-4 py-1 bg-neon-900/30 border border-neon-800/30 rounded-full text-xs text-neon-300 uppercase tracking-widest mb-4">Fonctionnalités</span>
+                <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white">
+                    Pourquoi <span class="gradient-text">Stackia Telecom</span> ?
+                </h2>
+                <p class="mt-4 text-gray-400 max-w-xl mx-auto text-base sm:text-lg">Un mesh radio qui marche même quand
+                    le reste tombe. Conçu pour être lu, compris et bidouillé.</p>
+            </div>
+
+            <!-- Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+                <!-- Card 1 -->
+                <div data-aos="fade-up" data-aos-delay="100"
+                    class="glow-card rounded-2xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-8 backdrop-blur-sm">
+                    <div
+                        class="w-14 h-14 rounded-2xl bg-neon-600/10 border border-neon-600/20 flex items-center justify-center mb-6">
+                        <i data-lucide="wifi-off" class="w-7 h-7 text-neon-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Sans internet</h3>
+                    <p class="text-gray-400 leading-relaxed">Aucune box, aucun serveur distant. Les nœuds parlent
+                        directement en RF. Le mesh continue de vivre quand le Wi-Fi, la 4G et le cloud sont coupés.</p>
+                </div>
+
+                <!-- Card 2 -->
+                <div data-aos="fade-up" data-aos-delay="200"
+                    class="glow-card rounded-2xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-8 backdrop-blur-sm">
+                    <div
+                        class="w-14 h-14 rounded-2xl bg-neon-600/10 border border-neon-600/20 flex items-center justify-center mb-6">
+                        <i data-lucide="route" class="w-7 h-7 text-neon-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Mesh auto-réparant</h3>
+                    <p class="text-gray-400 leading-relaxed">Routage par <em>flooding</em> avec TTL, anti-boucle et
+                        dédup. Chaque nœud relaie pour les autres : ajoutez-en un, la portée s'étend toute seule.</p>
+                </div>
+
+                <!-- Card 3 -->
+                <div data-aos="fade-up" data-aos-delay="300"
+                    class="glow-card rounded-2xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-8 backdrop-blur-sm">
+                    <div
+                        class="w-14 h-14 rounded-2xl bg-signal-500/10 border border-signal-500/20 flex items-center justify-center mb-6">
+                        <i data-lucide="share-2" class="w-7 h-7 text-signal-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Pont MQTT &amp; n8n</h3>
+                    <p class="text-gray-400 leading-relaxed">Les nœuds <em>home antenna</em> font le pont LoRa ↔ MQTT.
+                        Automatisez tout depuis n8n : alertes, dashboards, déclencheurs — votre mesh devient programmable.</p>
+                </div>
+
+                <!-- Card 4 -->
+                <div data-aos="fade-up" data-aos-delay="100"
+                    class="glow-card rounded-2xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-8 backdrop-blur-sm">
+                    <div
+                        class="w-14 h-14 rounded-2xl bg-neon-600/10 border border-neon-600/20 flex items-center justify-center mb-6">
+                        <i data-lucide="layout-dashboard" class="w-7 h-7 text-neon-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Web UI embarquée</h3>
+                    <p class="text-gray-400 leading-relaxed">Une interface servie depuis le nœud (LittleFS) : voisins,
+                        messages, statut, envoi. Pas d'app à installer, ça s'ouvre dans le navigateur.</p>
+                </div>
+
+                <!-- Card 5 -->
+                <div data-aos="fade-up" data-aos-delay="200"
+                    class="glow-card rounded-2xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-8 backdrop-blur-sm">
+                    <div
+                        class="w-14 h-14 rounded-2xl bg-neon-600/10 border border-neon-600/20 flex items-center justify-center mb-6">
+                        <i data-lucide="package" class="w-7 h-7 text-neon-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Gros messages</h3>
+                    <p class="text-gray-400 leading-relaxed">LoRa plafonne à ~200 caractères ? Le firmware fragmente et
+                        réassemble automatiquement en base64. Lent mais fiable, pour des Ko entiers.</p>
+                </div>
+
+                <!-- Card 6 -->
+                <div data-aos="fade-up" data-aos-delay="300"
+                    class="glow-card rounded-2xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-8 backdrop-blur-sm">
+                    <div
+                        class="w-14 h-14 rounded-2xl bg-neon-600/10 border border-neon-600/20 flex items-center justify-center mb-6">
+                        <i data-lucide="settings-2" class="w-7 h-7 text-neon-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Config sans code</h3>
+                    <p class="text-gray-400 leading-relaxed">Au premier boot, un captive portal vous laisse choisir le
+                        type de nœud et le Wi-Fi. Sauvé dans <code class="text-neon-300">/config.json</code>, et c'est parti.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== NODE TYPES ===================== -->
+    <section id="nodes" class="relative py-20 sm:py-28 bg-gradient-to-b from-black via-[#05001a] to-black">
+        <div class="grid-overlay"></div>
+        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Heading -->
+            <div class="text-center mb-16" data-aos="fade-up">
+                <span
+                    class="inline-block px-4 py-1 bg-neon-900/30 border border-neon-800/30 rounded-full text-xs text-neon-300 uppercase tracking-widest mb-4">Architecture</span>
+                <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white">
+                    Trois rôles, un seul <span class="gradient-text">firmware</span>
+                </h2>
+                <p class="mt-4 text-gray-400 max-w-xl mx-auto text-base sm:text-lg">Le même binaire, trois
+                    personnalités. Le type est choisi au premier démarrage.</p>
+            </div>
+
+            <!-- Node cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+                <!-- HANDHELD -->
+                <div data-aos="fade-up" data-aos-delay="100"
+                    class="glow-card rounded-2xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-8 backdrop-blur-sm">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="w-14 h-14 rounded-2xl bg-neon-600/10 border border-neon-600/20 flex items-center justify-center">
+                            <i data-lucide="smartphone" class="w-7 h-7 text-neon-400"></i>
+                        </div>
+                        <!-- signal wave -->
+                        <svg width="34" height="24" viewBox="0 0 34 24">
+                            <rect class="wave-bar" x="2"  y="6"  width="5" height="18" rx="2" fill="#a855f7" />
+                            <rect class="wave-bar" x="10" y="6"  width="5" height="18" rx="2" fill="#a855f7" />
+                            <rect class="wave-bar" x="18" y="6"  width="5" height="18" rx="2" fill="#a855f7" />
+                            <rect class="wave-bar" x="26" y="6"  width="5" height="18" rx="2" fill="#a855f7" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-1">HANDHELD</h3>
+                    <p class="text-xs text-neon-300 uppercase tracking-wider mb-4">Terminal mobile</p>
+                    <p class="text-gray-400 leading-relaxed mb-6">Un point d'accès Wi-Fi ouvert <code
+                            class="text-neon-300">mesh-{id}</code>. Vous vous y connectez avec un téléphone et discutez
+                        via la web UI. Aucun MQTT — c'est le combiné de poche.</p>
+                    <ul class="space-y-2 text-sm">
+                        <li class="flex items-center gap-2 text-gray-300"><i data-lucide="check" class="w-4 h-4 text-neon-400"></i> Wi-Fi : AP ouvert</li>
+                        <li class="flex items-center gap-2 text-gray-300"><i data-lucide="check" class="w-4 h-4 text-neon-400"></i> Web UI embarquée</li>
+                        <li class="flex items-center gap-2 text-gray-500"><i data-lucide="x" class="w-4 h-4 text-gray-600"></i> Pas de MQTT</li>
+                    </ul>
+                </div>
+
+                <!-- HOME ANTENNA -->
+                <div data-aos="fade-up" data-aos-delay="200"
+                    class="glow-card rounded-2xl bg-gradient-to-br from-signal-500/[0.06] to-white/[0.01] p-8 backdrop-blur-sm relative overflow-hidden">
+                    <span class="absolute top-4 right-4 text-[10px] font-semibold uppercase tracking-wider text-signal-300 bg-signal-500/10 border border-signal-500/30 rounded-full px-2 py-0.5">Pont</span>
+                    <div class="w-14 h-14 rounded-2xl bg-signal-500/10 border border-signal-500/20 flex items-center justify-center mb-6">
+                        <i data-lucide="house-wifi" class="w-7 h-7 text-signal-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-1">HOME_ANTENNA</h3>
+                    <p class="text-xs text-signal-300 uppercase tracking-wider mb-4">Pont LoRa ↔ MQTT</p>
+                    <p class="text-gray-400 leading-relaxed mb-6">Se connecte à votre Wi-Fi maison (STA) et relaie le
+                        mesh vers un broker MQTT local. C'est la passerelle vers n8n, vos dashboards et vos automatisations.</p>
+                    <ul class="space-y-2 text-sm">
+                        <li class="flex items-center gap-2 text-gray-300"><i data-lucide="check" class="w-4 h-4 text-signal-400"></i> Wi-Fi : station (STA)</li>
+                        <li class="flex items-center gap-2 text-gray-300"><i data-lucide="check" class="w-4 h-4 text-signal-400"></i> Web UI + MQTT</li>
+                        <li class="flex items-center gap-2 text-gray-300"><i data-lucide="check" class="w-4 h-4 text-signal-400"></i> LWT online/offline</li>
+                    </ul>
+                </div>
+
+                <!-- REPEATER -->
+                <div data-aos="fade-up" data-aos-delay="300"
+                    class="glow-card rounded-2xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-8 backdrop-blur-sm">
+                    <div class="w-14 h-14 rounded-2xl bg-neon-600/10 border border-neon-600/20 flex items-center justify-center mb-6">
+                        <i data-lucide="radio-tower" class="w-7 h-7 text-neon-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-1">REPEATER</h3>
+                    <p class="text-xs text-neon-300 uppercase tracking-wider mb-4">Relais + beacon</p>
+                    <p class="text-gray-400 leading-relaxed mb-6">Wi-Fi désactivé pour économiser la RAM. Il ne fait
+                        qu'écouter, relayer et émettre un beacon. Posez-le en hauteur : c'est lui qui étire la portée du mesh.</p>
+                    <ul class="space-y-2 text-sm">
+                        <li class="flex items-center gap-2 text-gray-500"><i data-lucide="x" class="w-4 h-4 text-gray-600"></i> Pas de Wi-Fi</li>
+                        <li class="flex items-center gap-2 text-gray-500"><i data-lucide="x" class="w-4 h-4 text-gray-600"></i> Pas de web UI</li>
+                        <li class="flex items-center gap-2 text-gray-300"><i data-lucide="check" class="w-4 h-4 text-neon-400"></i> Max de marge RAM</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Recap table -->
+            <div class="mt-12 overflow-x-auto" data-aos="fade-up" data-aos-delay="150">
+                <table class="spec-table w-full text-left text-sm min-w-[640px] rounded-2xl overflow-hidden border border-neon-800/20">
+                    <thead>
+                        <tr class="bg-neon-900/30 text-neon-200 uppercase text-xs tracking-wider">
+                            <th class="px-5 py-4 font-semibold border-b">Type</th>
+                            <th class="px-5 py-4 font-semibold border-b">Wi-Fi</th>
+                            <th class="px-5 py-4 font-semibold border-b">Web UI</th>
+                            <th class="px-5 py-4 font-semibold border-b">MQTT</th>
+                            <th class="px-5 py-4 font-semibold border-b">Rôle</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-300">
+                        <tr class="bg-white/[0.02]">
+                            <td class="px-5 py-4 border-b font-semibold text-white">HANDHELD</td>
+                            <td class="px-5 py-4 border-b">AP ouvert <span class="font-mono text-neon-300">mesh-{id}</span></td>
+                            <td class="px-5 py-4 border-b text-neon-300">oui</td>
+                            <td class="px-5 py-4 border-b text-gray-500">non</td>
+                            <td class="px-5 py-4 border-b">terminal mobile</td>
+                        </tr>
+                        <tr class="bg-signal-500/[0.03]">
+                            <td class="px-5 py-4 border-b font-semibold text-white">HOME_ANTENNA</td>
+                            <td class="px-5 py-4 border-b">STA (Wi-Fi maison)</td>
+                            <td class="px-5 py-4 border-b text-signal-300">oui</td>
+                            <td class="px-5 py-4 border-b text-signal-300">oui</td>
+                            <td class="px-5 py-4 border-b">pont LoRa ↔ MQTT</td>
+                        </tr>
+                        <tr class="bg-white/[0.02]">
+                            <td class="px-5 py-4 font-semibold text-white">REPEATER</td>
+                            <td class="px-5 py-4 text-gray-500">aucun (désactivé)</td>
+                            <td class="px-5 py-4 text-gray-500">non</td>
+                            <td class="px-5 py-4 text-gray-500">non</td>
+                            <td class="px-5 py-4">relais + beacon</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== HOW IT WORKS ===================== -->
+    <section id="how" class="relative py-20 sm:py-28 bg-black">
+        <div class="grid-overlay"></div>
+        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Heading -->
+            <div class="text-center mb-16" data-aos="fade-up">
+                <span
+                    class="inline-block px-4 py-1 bg-neon-900/30 border border-neon-800/30 rounded-full text-xs text-neon-300 uppercase tracking-widest mb-4">Guide</span>
+                <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white">
+                    De la carte au mesh, en <span class="gradient-text">3 étapes</span>
+                </h2>
+                <p class="mt-4 text-gray-400 max-w-xl mx-auto text-base sm:text-lg">Un ESP8266, un module LR20-A, quatre
+                    fils. Pas plus compliqué que ça.</p>
+            </div>
+
+            <!-- Steps -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12 mb-16">
+                <!-- Step 1 -->
+                <div data-aos="fade-right" data-aos-delay="100" class="relative text-center md:text-left">
+                    <div
+                        class="step-connector inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-neon-600 to-neon-800 shadow-lg shadow-neon-600/20 mb-6 mx-auto md:mx-0">
+                        <span class="text-2xl font-black text-white">1</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Câblez &amp; flashez</h3>
+                    <p class="text-gray-400 leading-relaxed">Quatre fils entre l'ESP8266 et le LR20-A (3,3 V
+                        uniquement). Puis <code class="text-neon-300">pio run -t upload</code> et <code
+                            class="text-neon-300">uploadfs</code>.</p>
+                </div>
+
+                <!-- Step 2 -->
+                <div data-aos="fade-up" data-aos-delay="250" class="relative text-center md:text-left">
+                    <div
+                        class="step-connector inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-neon-600 to-neon-800 shadow-lg shadow-neon-600/20 mb-6 mx-auto md:mx-0">
+                        <span class="text-2xl font-black text-white">2</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Configurez au portail</h3>
+                    <p class="text-gray-400 leading-relaxed">Au boot, rejoignez l'AP <code
+                            class="text-neon-300">MeshSetup-XXXXXX</code>, ouvrez <span class="font-mono text-signal-300">192.168.4.1</span>,
+                        choisissez le type de nœud. Reboot automatique.</p>
+                </div>
+
+                <!-- Step 3 -->
+                <div data-aos="fade-left" data-aos-delay="400" class="relative text-center md:text-left">
+                    <div
+                        class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-neon-600 to-neon-800 shadow-lg shadow-neon-600/20 mb-6 mx-auto md:mx-0">
+                        <span class="text-2xl font-black text-white">3</span>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Le mesh s'étend</h3>
+                    <p class="text-gray-400 leading-relaxed">Allumez un deuxième nœud : ils se découvrent par beacon et
+                        se relaient. Chaque nœud ajouté agrandit la couverture, sans config.</p>
+                </div>
+            </div>
+
+            <!-- Wiring + commands -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Wiring -->
+                <div data-aos="fade-up" class="glow-card rounded-2xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-6 sm:p-8 backdrop-blur-sm">
+                    <div class="flex items-center gap-3 mb-6">
+                        <i data-lucide="cable" class="w-6 h-6 text-neon-400"></i>
+                        <h3 class="text-lg font-bold text-white">Câblage (3,3 V uniquement)</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="spec-table w-full text-left text-sm">
+                            <thead>
+                                <tr class="text-neon-300 uppercase text-xs tracking-wider">
+                                    <th class="py-2 pr-4 border-b font-semibold">ESP8266</th>
+                                    <th class="py-2 border-b font-semibold">LR20-A</th>
+                                </tr>
+                            </thead>
+                            <tbody class="font-mono text-gray-300">
+                                <tr><td class="py-2 pr-4 border-b">GPIO14 (D5) TX</td><td class="py-2 border-b text-signal-300">RXD</td></tr>
+                                <tr><td class="py-2 pr-4 border-b">GPIO12 (D6) RX</td><td class="py-2 border-b text-signal-300">TXD</td></tr>
+                                <tr><td class="py-2 pr-4 border-b">3V3</td><td class="py-2 border-b text-signal-300">VCC</td></tr>
+                                <tr><td class="py-2 pr-4">GND</td><td class="py-2 text-signal-300">GND</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-5 flex items-start gap-2 text-xs text-amber-300/90 bg-amber-500/5 border border-amber-500/20 rounded-lg p-3">
+                        <i data-lucide="triangle-alert" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
+                        <span>Jamais de 5 V sur le LR20-A. UART module : <strong>9600 baud</strong> (SoftwareSerial).</span>
+                    </div>
+                </div>
+
+                <!-- Commands -->
+                <div data-aos="fade-up" data-aos-delay="150" class="glow-card rounded-2xl code-block p-6 sm:p-8">
+                    <div class="flex items-center gap-3 mb-6">
+                        <i data-lucide="terminal" class="w-6 h-6 text-neon-400"></i>
+                        <h3 class="text-lg font-bold text-white font-sans">Compilation &amp; flash (PlatformIO)</h3>
+                    </div>
+                    <pre class="text-sm leading-relaxed overflow-x-auto"><code><span class="tok-comment"># compiler</span>
+<span class="tok-cmd">pio</span> run -e esp8266
+
+<span class="tok-comment"># flasher le firmware</span>
+<span class="tok-cmd">pio</span> run -e esp8266 -t upload
+
+<span class="tok-comment"># flasher data/ (LittleFS, index.html)</span>
+<span class="tok-cmd">pio</span> run -e esp8266 -t uploadfs
+
+<span class="tok-comment"># logs série (115200)</span>
+<span class="tok-cmd">pio</span> device monitor</code></pre>
+                    <p class="mt-5 text-xs text-gray-500 font-sans">Le <code class="text-neon-300">uploadfs</code> est
+                        indispensable : la web UI est servie depuis LittleFS.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== PROTOCOL ===================== -->
+    <section id="protocol" class="relative py-20 sm:py-28 bg-gradient-to-b from-black via-[#05001a] to-black">
+        <div class="grid-overlay"></div>
+        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Heading -->
+            <div class="text-center mb-16" data-aos="fade-up">
+                <span
+                    class="inline-block px-4 py-1 bg-neon-900/30 border border-neon-800/30 rounded-full text-xs text-neon-300 uppercase tracking-widest mb-4">Sous le capot</span>
+                <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white">
+                    Le <span class="gradient-text">protocole</span>, à nu
+                </h2>
+                <p class="mt-4 text-gray-400 max-w-xl mx-auto text-base sm:text-lg">Du JSON compact, du flooding TTL,
+                    des topics MQTT clairs. Rien de magique, tout est lisible.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <!-- Packet format -->
+                <div data-aos="fade-up" class="glow-card rounded-2xl code-block p-6 sm:p-8">
+                    <div class="flex items-center gap-3 mb-5">
+                        <i data-lucide="braces" class="w-6 h-6 text-neon-400"></i>
+                        <h3 class="text-lg font-bold text-white font-sans">Paquet LoRa <span class="text-gray-500 text-sm font-normal">(≤ 200 chars)</span></h3>
+                    </div>
+                    <pre class="text-xs sm:text-sm leading-relaxed overflow-x-auto"><code>{
+  <span class="tok-key">"f"</span>:  <span class="tok-str">"node_01"</span>,   <span class="tok-comment">// source</span>
+  <span class="tok-key">"t"</span>:  <span class="tok-str">"node_02"</span>,   <span class="tok-comment">// destination ou "all"</span>
+  <span class="tok-key">"m"</span>:  <span class="tok-str">"texte"</span>,     <span class="tok-comment">// message</span>
+  <span class="tok-key">"tp"</span>: <span class="tok-str">"msg"</span>,       <span class="tok-comment">// msg | beacon | ack | frag</span>
+  <span class="tok-key">"ttl"</span>: <span class="tok-num">3</span>,          <span class="tok-comment">// 1-5, -1 à chaque hop</span>
+  <span class="tok-key">"ts"</span>: <span class="tok-num">1234567</span>     <span class="tok-comment">// s depuis le boot</span>
+}</code></pre>
+                    <p class="mt-5 text-xs text-gray-400 font-sans leading-relaxed">Flooding : chaque paquet est diffusé
+                        en broadcast RF, retransmis tant que <code class="text-neon-300">ttl &gt; 1</code>, avec un cache
+                        anti-boucle des 20 derniers <span class="font-mono text-signal-300">from+ts</span>. Le
+                        <code class="text-neon-300">ts</code> est strictement croissant pour garantir l'unicité.</p>
+                </div>
+
+                <!-- MQTT topics -->
+                <div data-aos="fade-up" data-aos-delay="150" class="glow-card rounded-2xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-6 sm:p-8 backdrop-blur-sm">
+                    <div class="flex items-center gap-3 mb-5">
+                        <i data-lucide="git-fork" class="w-6 h-6 text-signal-400"></i>
+                        <h3 class="text-lg font-bold text-white">Topics MQTT <span class="text-gray-500 text-sm font-normal">(HOME_ANTENNA)</span></h3>
+                    </div>
+                    <ul class="space-y-3 text-sm">
+                        <li class="flex items-start gap-3">
+                            <span class="text-[10px] font-semibold uppercase mt-0.5 px-1.5 py-0.5 rounded bg-signal-500/10 text-signal-300 border border-signal-500/20">RX</span>
+                            <div><code class="font-mono text-neon-300 text-xs sm:text-sm">mesh/msg/rx/{id}</code><p class="text-gray-500 text-xs">message reçu pour ce nœud / broadcast</p></div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-[10px] font-semibold uppercase mt-0.5 px-1.5 py-0.5 rounded bg-neon-500/10 text-neon-300 border border-neon-500/20">TX</span>
+                            <div><code class="font-mono text-neon-300 text-xs sm:text-sm">mesh/msg/tx/{id}</code><p class="text-gray-500 text-xs">message à émettre <span class="font-mono">{"to":..,"msg":..}</span></p></div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-[10px] font-semibold uppercase mt-0.5 px-1.5 py-0.5 rounded bg-signal-500/10 text-signal-300 border border-signal-500/20">RX</span>
+                            <div><code class="font-mono text-neon-300 text-xs sm:text-sm">mesh/nodes/{id}/status</code><p class="text-gray-500 text-xs">online/offline, retain=true (LWT)</p></div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-[10px] font-semibold uppercase mt-0.5 px-1.5 py-0.5 rounded bg-signal-500/10 text-signal-300 border border-signal-500/20">RX</span>
+                            <div><code class="font-mono text-neon-300 text-xs sm:text-sm">mesh/nodes/{id}/stats</code><p class="text-gray-500 text-xs">RSSI, SNR, rx/tx, uptime, heap</p></div>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-[10px] font-semibold uppercase mt-0.5 px-1.5 py-0.5 rounded bg-signal-500/10 text-signal-300 border border-signal-500/20">RX</span>
+                            <div><code class="font-mono text-neon-300 text-xs sm:text-sm">mesh/nodes/discovery</code><p class="text-gray-500 text-xs">beacon d'un autre nœud (pour n8n)</p></div>
+                        </li>
+                    </ul>
+                    <p class="mt-5 text-xs text-gray-500">Les gros messages passent par <code class="font-mono text-neon-300">…/large/{from}</code> en contenu brut, sans souci d'échappement JSON.</p>
+                </div>
+            </div>
+
+            <!-- Fragmentation + API -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Fragmentation -->
+                <div data-aos="fade-up" class="glow-card rounded-2xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-6 sm:p-8 backdrop-blur-sm">
+                    <div class="flex items-center gap-3 mb-5">
+                        <i data-lucide="boxes" class="w-6 h-6 text-neon-400"></i>
+                        <h3 class="text-lg font-bold text-white">Gros messages, fragmentés</h3>
+                    </div>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-5">Au-delà de <span class="font-mono text-signal-300">MESH_SINGLE_MAX</span> (~100 o),
+                        le message est découpé en blocs de 48 o encodés base64, envoyés un par un au rythme de la file
+                        LoRa. Réassemblage par <span class="font-mono text-signal-300">(expéditeur, id)</span>, l'ordre
+                        n'a pas d'importance.</p>
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <div class="bg-black/30 border border-neon-800/20 rounded-lg p-3">
+                            <div class="text-neon-300 font-mono text-lg font-bold">2048</div>
+                            <div class="text-gray-500 text-xs">octets max / message</div>
+                        </div>
+                        <div class="bg-black/30 border border-neon-800/20 rounded-lg p-3">
+                            <div class="text-neon-300 font-mono text-lg font-bold">48</div>
+                            <div class="text-gray-500 text-xs">o bruts / fragment</div>
+                        </div>
+                        <div class="bg-black/30 border border-neon-800/20 rounded-lg p-3">
+                            <div class="text-neon-300 font-mono text-lg font-bold">30 s</div>
+                            <div class="text-gray-500 text-xs">gap avant abandon</div>
+                        </div>
+                        <div class="bg-black/30 border border-neon-800/20 rounded-lg p-3">
+                            <div class="text-neon-300 font-mono text-lg font-bold">base64</div>
+                            <div class="text-gray-500 text-xs">binaire-safe</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- HTTP API -->
+                <div data-aos="fade-up" data-aos-delay="150" class="glow-card rounded-2xl bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-6 sm:p-8 backdrop-blur-sm">
+                    <div class="flex items-center gap-3 mb-5">
+                        <i data-lucide="globe" class="w-6 h-6 text-signal-400"></i>
+                        <h3 class="text-lg font-bold text-white">API HTTP (Web UI)</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="spec-table w-full text-left text-sm">
+                            <thead>
+                                <tr class="text-neon-300 uppercase text-xs tracking-wider">
+                                    <th class="py-2 pr-4 border-b font-semibold">Route</th>
+                                    <th class="py-2 pr-4 border-b font-semibold">Méthode</th>
+                                    <th class="py-2 border-b font-semibold">Description</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-300">
+                                <tr><td class="py-2 pr-4 border-b font-mono text-xs text-signal-300">/api/nodes</td><td class="py-2 pr-4 border-b text-neon-300">GET</td><td class="py-2 border-b text-xs">voisins (RSSI/SNR/âge/sauts)</td></tr>
+                                <tr><td class="py-2 pr-4 border-b font-mono text-xs text-signal-300">/api/messages</td><td class="py-2 pr-4 border-b text-neon-300">GET</td><td class="py-2 border-b text-xs">20 derniers messages</td></tr>
+                                <tr><td class="py-2 pr-4 border-b font-mono text-xs text-signal-300">/api/status</td><td class="py-2 pr-4 border-b text-neon-300">GET</td><td class="py-2 border-b text-xs">uptime, heap, compteurs</td></tr>
+                                <tr><td class="py-2 pr-4 font-mono text-xs text-signal-300">/api/send</td><td class="py-2 pr-4 text-amber-300">POST</td><td class="py-2 text-xs font-mono">{"to":..,"msg":..}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="mt-5 text-xs text-gray-500">Polling toutes les 3 s (pas de WebSocket, pour économiser la RAM).</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== COMPARISON ===================== -->
+    <section id="compare" class="relative py-20 sm:py-28 bg-black">
+        <div class="grid-overlay"></div>
+        <div class="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Heading -->
+            <div class="text-center mb-16" data-aos="fade-up">
+                <span
+                    class="inline-block px-4 py-1 bg-neon-900/30 border border-neon-800/30 rounded-full text-xs text-neon-300 uppercase tracking-widest mb-4">Comparaison</span>
+                <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white">
+                    Stackia vs <span class="gradient-text">l'écosystème</span>
+                </h2>
+                <p class="mt-4 text-gray-400 max-w-xl mx-auto text-base sm:text-lg">Meshtastic et MeshCore sont
+                    excellents. Stackia vise un créneau différent : ultra-local, MQTT-natif, et taillé pour le bidouillage.</p>
+            </div>
+
+            <div data-aos="fade-up" data-aos-delay="150" class="overflow-x-auto">
+                <table class="spec-table w-full text-left text-sm min-w-[640px] rounded-2xl overflow-hidden border border-neon-800/20">
+                    <thead>
+                        <tr class="bg-neon-900/30 uppercase text-xs tracking-wider">
+                            <th class="px-5 py-4 font-semibold border-b text-gray-300"></th>
+                            <th class="px-5 py-4 font-semibold border-b text-center">
+                                <span class="gradient-text-bright text-sm normal-case tracking-normal">Stackia Telecom</span>
+                            </th>
+                            <th class="px-5 py-4 font-semibold border-b text-center text-gray-400 normal-case tracking-normal">Meshtastic</th>
+                            <th class="px-5 py-4 font-semibold border-b text-center text-gray-400 normal-case tracking-normal">MeshCore</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-300">
+                        <tr class="bg-white/[0.02]">
+                            <td class="px-5 py-4 border-b font-medium">100% local, sans cloud</td>
+                            <td class="px-5 py-4 border-b text-center"><i data-lucide="check" class="w-5 h-5 text-signal-400 inline"></i></td>
+                            <td class="px-5 py-4 border-b text-center text-gray-500 text-xs">optionnel</td>
+                            <td class="px-5 py-4 border-b text-center"><i data-lucide="check" class="w-5 h-5 text-gray-500 inline"></i></td>
+                        </tr>
+                        <tr>
+                            <td class="px-5 py-4 border-b font-medium">Pont MQTT &amp; n8n natif</td>
+                            <td class="px-5 py-4 border-b text-center"><i data-lucide="check" class="w-5 h-5 text-signal-400 inline"></i></td>
+                            <td class="px-5 py-4 border-b text-center text-gray-500 text-xs">via gateway</td>
+                            <td class="px-5 py-4 border-b text-center text-gray-600">—</td>
+                        </tr>
+                        <tr class="bg-white/[0.02]">
+                            <td class="px-5 py-4 border-b font-medium">Web UI embarquée</td>
+                            <td class="px-5 py-4 border-b text-center"><i data-lucide="check" class="w-5 h-5 text-signal-400 inline"></i></td>
+                            <td class="px-5 py-4 border-b text-center text-gray-500 text-xs">app mobile</td>
+                            <td class="px-5 py-4 border-b text-center text-gray-500 text-xs">app / CLI</td>
+                        </tr>
+                        <tr>
+                            <td class="px-5 py-4 border-b font-medium">Config sans flash (captive portal)</td>
+                            <td class="px-5 py-4 border-b text-center"><i data-lucide="check" class="w-5 h-5 text-signal-400 inline"></i></td>
+                            <td class="px-5 py-4 border-b text-center"><i data-lucide="check" class="w-5 h-5 text-gray-500 inline"></i></td>
+                            <td class="px-5 py-4 border-b text-center"><i data-lucide="check" class="w-5 h-5 text-gray-500 inline"></i></td>
+                        </tr>
+                        <tr class="bg-white/[0.02]">
+                            <td class="px-5 py-4 border-b font-medium">Cible ESP8266 (low-cost)</td>
+                            <td class="px-5 py-4 border-b text-center"><i data-lucide="check" class="w-5 h-5 text-signal-400 inline"></i></td>
+                            <td class="px-5 py-4 border-b text-center text-gray-600">—</td>
+                            <td class="px-5 py-4 border-b text-center text-gray-500 text-xs">ESP32+</td>
+                        </tr>
+                        <tr>
+                            <td class="px-5 py-4 border-b font-medium">Code minimal, lisible &amp; hackable</td>
+                            <td class="px-5 py-4 border-b text-center"><i data-lucide="check" class="w-5 h-5 text-signal-400 inline"></i></td>
+                            <td class="px-5 py-4 border-b text-center text-gray-500 text-xs">large</td>
+                            <td class="px-5 py-4 border-b text-center"><i data-lucide="check" class="w-5 h-5 text-gray-500 inline"></i></td>
+                        </tr>
+                        <tr class="bg-white/[0.02]">
+                            <td class="px-5 py-4 font-medium">Écosystème &amp; communauté</td>
+                            <td class="px-5 py-4 text-center text-gray-500 text-xs">jeune</td>
+                            <td class="px-5 py-4 text-center"><i data-lucide="check" class="w-5 h-5 text-gray-400 inline"></i></td>
+                            <td class="px-5 py-4 text-center text-gray-500 text-xs">en croissance</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-center text-xs text-gray-600 mt-6 max-w-2xl mx-auto">On ne réinvente pas la radio — on
+                propose une approche minimaliste, auto-hébergée et programmable. Si vous voulez un mesh que vous
+                comprenez ligne par ligne et que vous pilotez depuis vos propres outils, Stackia est fait pour vous.</p>
+        </div>
+    </section>
+
+    <!-- ===================== GET STARTED / FINAL CTA ===================== -->
+    <section id="start" class="relative py-20 sm:py-28 bg-gradient-to-b from-black via-[#0d0025] to-black overflow-hidden">
+        <div class="grid-overlay"></div>
+        <!-- Glow circles -->
+        <div
+            class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-neon-600/10 rounded-full blur-[120px] pointer-events-none">
+        </div>
+
+        <div class="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 text-center">
+            <div data-aos="zoom-in" data-aos-duration="800">
+                <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-6">
+                    Prêt à poser votre<br><span class="gradient-text-bright">premier nœud</span> ?
+                </h2>
+                <p class="text-gray-400 text-base sm:text-lg mb-10 max-w-xl mx-auto leading-relaxed">
+                    Un ESP8266, un LR20-A, et le firmware. En dix minutes vous avez un réseau radio bien à vous —
+                    qui marche même quand internet ne marche plus.
+                </p>
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <a href="#how"
+                        class="glow-btn inline-flex items-center gap-3 px-10 py-5 bg-gradient-to-r from-neon-600 to-neon-500 hover:from-neon-500 hover:to-neon-400 text-white font-bold text-lg rounded-full transition-all duration-300">
+                        <i data-lucide="cpu" class="w-6 h-6"></i>
+                        Guide de flash
+                        <i data-lucide="arrow-right" class="w-6 h-6"></i>
+                    </a>
+                    <a href="#protocol"
+                        class="inline-flex items-center gap-2 px-8 py-5 border border-white/10 hover:border-neon-500/40 text-gray-300 hover:text-white font-medium text-base rounded-full transition-all duration-300 hover:bg-white/5">
+                        <i data-lucide="file-code-2" class="w-5 h-5"></i>
+                        Voir le protocole
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===================== FOOTER ===================== -->
+    <footer class="border-t border-white/5 bg-black/80 backdrop-blur-sm py-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-2">
+                    <div
+                        class="w-7 h-7 rounded-lg bg-gradient-to-br from-neon-500 to-neon-700 flex items-center justify-center">
+                        <i data-lucide="radio-tower" class="w-4 h-4 text-white"></i>
+                    </div>
+                    <span class="text-sm font-semibold text-white">Stack<span class="gradient-text">ia</span> Telecom</span>
+                </div>
+                <p class="text-xs text-gray-600 text-center">© 2026 Stackia Telecom. Firmware mesh LoRa expérimental —
+                    respectez la réglementation RF de votre pays.</p>
+                <div class="flex items-center gap-4 text-xs text-gray-500">
+                    <a href="#features" class="hover:text-neon-400 transition-colors">Fonctionnalités</a>
+                    <a href="#nodes" class="hover:text-neon-400 transition-colors">Nœuds</a>
+                    <a href="#protocol" class="hover:text-neon-400 transition-colors">Protocole</a>
+                    <a href="#compare" class="hover:text-neon-400 transition-colors">Comparaison</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ===================== JAVASCRIPT ===================== -->
+    <script>
+        // ===== AOS INIT =====
+        AOS.init({ duration: 800, easing: 'ease-out-cubic', once: true, offset: 60 });
+
+        // ===== LUCIDE ICONS INIT =====
+        lucide.createIcons();
+
+        // ===== MOBILE MENU =====
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        mobileMenuBtn.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
+        mobileMenu.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => mobileMenu.classList.add('hidden'));
+        });
+
+        // ===== NAVBAR SCROLL EFFECT =====
+        const nav = document.getElementById('main-nav');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                nav.classList.add('bg-black/90', 'shadow-lg', 'shadow-neon-900/10');
+            } else {
+                nav.classList.remove('bg-black/90', 'shadow-lg', 'shadow-neon-900/10');
+            }
+        });
+
+        // ===== FLOATING PARTICLES =====
+        function createParticles() {
+            const container = document.getElementById('particles-container');
+            const count = window.innerWidth < 768 ? 15 : 30;
+            for (let i = 0; i < count; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                const size = Math.random() * 4 + 2;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDuration = (Math.random() * 15 + 10) + 's';
+                particle.style.animationDelay = (Math.random() * 10) + 's';
+                particle.style.opacity = Math.random() * 0.5 + 0.1;
+                container.appendChild(particle);
+            }
+        }
+        createParticles();
+
+        // ===== MESH NETWORK ANIMATION =====
+        function buildMesh() {
+            const W = 1200, H = 800;
+            // Nodes: a couple of bridges (cyan), rest regular (purple)
+            const nodes = [
+                { x: 150, y: 180, bridge: false },
+                { x: 380, y: 120, bridge: false },
+                { x: 620, y: 240, bridge: true },
+                { x: 880, y: 140, bridge: false },
+                { x: 1060, y: 300, bridge: false },
+                { x: 240, y: 460, bridge: false },
+                { x: 500, y: 560, bridge: false },
+                { x: 760, y: 480, bridge: true },
+                { x: 980, y: 600, bridge: false },
+                { x: 420, y: 340, bridge: false },
+            ];
+            // Links between nearby nodes
+            const links = [
+                [0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 9], [9, 1],
+                [9, 2], [5, 6], [6, 7], [7, 8], [7, 3], [2, 7], [6, 9], [8, 4],
+            ];
+
+            const linksG = document.getElementById('mesh-links');
+            const nodesG = document.getElementById('mesh-nodes');
+            const packetsG = document.getElementById('mesh-packets');
+            const svgNS = 'http://www.w3.org/2000/svg';
+
+            links.forEach((l, idx) => {
+                const a = nodes[l[0]], b = nodes[l[1]];
+                const line = document.createElementNS(svgNS, 'line');
+                line.setAttribute('x1', a.x); line.setAttribute('y1', a.y);
+                line.setAttribute('x2', b.x); line.setAttribute('y2', b.y);
+                line.setAttribute('class', 'mesh-link');
+                line.style.animationDelay = (idx * 0.2) + 's';
+                linksG.appendChild(line);
+
+                // traveling packet on a subset of links
+                if (idx % 2 === 0) {
+                    const dot = document.createElementNS(svgNS, 'circle');
+                    dot.setAttribute('r', 3);
+                    dot.setAttribute('class', 'packet-dot');
+                    const anim = document.createElementNS(svgNS, 'animate');
+                    anim.setAttribute('attributeName', 'cx');
+                    anim.setAttribute('values', `${a.x};${b.x};${a.x}`);
+                    anim.setAttribute('dur', (4 + (idx % 3)) + 's');
+                    anim.setAttribute('repeatCount', 'indefinite');
+                    const anim2 = document.createElementNS(svgNS, 'animate');
+                    anim2.setAttribute('attributeName', 'cy');
+                    anim2.setAttribute('values', `${a.y};${b.y};${a.y}`);
+                    anim2.setAttribute('dur', (4 + (idx % 3)) + 's');
+                    anim2.setAttribute('repeatCount', 'indefinite');
+                    dot.appendChild(anim); dot.appendChild(anim2);
+                    packetsG.appendChild(dot);
+                }
+            });
+
+            nodes.forEach((n, idx) => {
+                const ring = document.createElementNS(svgNS, 'circle');
+                ring.setAttribute('cx', n.x); ring.setAttribute('cy', n.y);
+                ring.setAttribute('r', 8);
+                ring.setAttribute('class', 'mesh-node-ring' + (n.bridge ? ' is-bridge' : ''));
+                ring.style.animationDelay = (idx * 0.3) + 's';
+                nodesG.appendChild(ring);
+
+                const core = document.createElementNS(svgNS, 'circle');
+                core.setAttribute('cx', n.x); core.setAttribute('cy', n.y);
+                core.setAttribute('r', n.bridge ? 6 : 4);
+                core.setAttribute('class', 'mesh-node-core' + (n.bridge ? ' is-bridge' : ''));
+                nodesG.appendChild(core);
+            });
+        }
+        buildMesh();
+
+        // ===== COUNTER ANIMATION =====
+        function animateCounters() {
+            document.querySelectorAll('.counter').forEach(counter => {
+                const target = parseInt(counter.getAttribute('data-target')) || 0;
+                if (target === 0) return;
+                const duration = 1600;
+                const step = target / (duration / 16);
+                let current = 0;
+                const timer = setInterval(() => {
+                    current += step;
+                    if (current >= target) {
+                        counter.textContent = target;
+                        clearInterval(timer);
+                    } else {
+                        counter.textContent = Math.floor(current);
+                    }
+                }, 16);
+            });
+        }
+        const heroObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) { animateCounters(); heroObserver.disconnect(); }
+            });
+        }, { threshold: 0.3 });
+        const firstCounter = document.querySelector('.counter');
+        if (firstCounter) heroObserver.observe(firstCounter.closest('div'));
+
+        // ===== SMOOTH SCROLL FOR ANCHOR LINKS =====
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                const href = this.getAttribute('href');
+                if (href === '#' || href.length < 2) return;
+                const target = document.querySelector(href);
+                if (target) {
+                    e.preventDefault();
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
